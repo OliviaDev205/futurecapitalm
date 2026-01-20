@@ -39,6 +39,15 @@ export default function UserDeets({ data }) {
   // State for handling form submission
   const [formSubmitted, setFormSubmitted] = useState(false);
 
+  // Helper function to convert empty strings to 0 for numeric fields
+  const parseNumericField = (value) => {
+    if (value === "" || value === null || value === undefined) {
+      return 0;
+    }
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+  };
+
   // Function to handle form submission
   const handleSubmit = async (e) => {
     isloading(true);
@@ -56,20 +65,20 @@ export default function UserDeets({ data }) {
         taxCodePin,
         autoTrades,
         isVerified,
-        tradingBalance,
-        investmentBalance,
-        totalDeposited,
-        totalWithdrawn,
-        totalAssets,
-        totalWon,
-        totalLoss,
-        lastProfit,
+        tradingBalance: parseNumericField(tradingBalance),
+        investmentBalance: parseNumericField(investmentBalance),
+        totalDeposited: parseNumericField(totalDeposited),
+        totalWithdrawn: parseNumericField(totalWithdrawn),
+        totalAssets: parseNumericField(totalAssets),
+        totalWon: parseNumericField(totalWon),
+        totalLoss: parseNumericField(totalLoss),
+        lastProfit: parseNumericField(lastProfit),
         // investmentPackage,
-        planBonus,
-        tradingProgress,
+        planBonus: parseNumericField(planBonus),
+        tradingProgress: parseNumericField(tradingProgress),
         customMessage,
         upgraded,
-        trade
+        trade: parseNumericField(trade)
       });
       if (response.status === 200) {
         setFormSubmitted(true);
@@ -93,29 +102,34 @@ export default function UserDeets({ data }) {
         const fetchedDetails = response.data;
 
         isloading(false);
+        // Helper to convert null/undefined to empty string for form inputs
+        const toInputValue = (value) => {
+          return value === null || value === undefined ? "" : String(value);
+        };
+
         // Update state with fetched details
-        setName(fetchedDetails.name);
-        setEmail(fetchedDetails.email);
-        setPhone(fetchedDetails.phone);
-        setPassword(fetchedDetails.password);
-        setWithdrawalPin(fetchedDetails.withdrawalPin);
-        setTaxCodePin(fetchedDetails.taxCodePin);
-        setAutoTrades(fetchedDetails.autoTrades);
-        setIsVerified(fetchedDetails.isVerified);
-        setTradingBalance(fetchedDetails.tradingBalance);
-        setInvestmentBalance(fetchedDetails.investmentBalance);
-        setTotalDeposited(fetchedDetails.totalDeposited);
-        setTotalWithdrawn(fetchedDetails.totalWithdrawn);
-        setTotalAssets(fetchedDetails.totalAssets);
-        setTotalWon(fetchedDetails.totalWon);
-        setTotalLoss(fetchedDetails.totalLoss);
-        setLastProfit(fetchedDetails.lastProfit);
-        setPlanBonus(fetchedDetails.planBonus);
-        setUpgraded(fetchedDetails.upgraded);
+        setName(fetchedDetails.name || "");
+        setEmail(fetchedDetails.email || "");
+        setPhone(fetchedDetails.phone || "");
+        setPassword(fetchedDetails.password || "");
+        setWithdrawalPin(fetchedDetails.withdrawalPin || "");
+        setTaxCodePin(fetchedDetails.taxCodePin || "");
+        setAutoTrades(fetchedDetails.autoTrades || false);
+        setIsVerified(fetchedDetails.isVerified || false);
+        setTradingBalance(toInputValue(fetchedDetails.tradingBalance));
+        setInvestmentBalance(toInputValue(fetchedDetails.investmentBalance));
+        setTotalDeposited(toInputValue(fetchedDetails.totalDeposited));
+        setTotalWithdrawn(toInputValue(fetchedDetails.totalWithdrawn));
+        setTotalAssets(toInputValue(fetchedDetails.totalAssets));
+        setTotalWon(toInputValue(fetchedDetails.totalWon));
+        setTotalLoss(toInputValue(fetchedDetails.totalLoss));
+        setLastProfit(toInputValue(fetchedDetails.lastProfit));
+        setPlanBonus(toInputValue(fetchedDetails.planBonus));
+        setUpgraded(fetchedDetails.upgraded || false);
         // setInvestmentPackage(fetchedDetails.investmentPackage);
-        setTradingProgress(fetchedDetails.tradingProgress);
-        setCustomMessage(fetchedDetails.customMessage);
-        setTrade(fetchedDetails.trade);
+        setTradingProgress(toInputValue(fetchedDetails.tradingProgress));
+        setCustomMessage(fetchedDetails.customMessage || "");
+        setTrade(toInputValue(fetchedDetails.trade));
       } catch (err) {
         // Handle any errors that occur during the request
         console.error("Error fetching user details:", err);

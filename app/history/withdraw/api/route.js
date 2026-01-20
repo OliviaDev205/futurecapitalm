@@ -23,8 +23,10 @@ export async function POST(request) {
       return NextResponse.json({ success: false, message: "User not found" });
     }
 
-    // Check KYC status
-    if (user.kycStatus !== "approved") {
+    // Check KYC status - accept either kycStatus === "approved" OR isVerified === true
+    const isKycApproved = user.kycStatus === "approved" || user.isVerified === true;
+    
+    if (!isKycApproved) {
       return NextResponse.json({
         success: false,
         message:

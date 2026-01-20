@@ -196,8 +196,10 @@ export default function Withdrawals() {
     e.preventDefault();
     setLoading(true);
 
-    // Check KYC status first
-    if (details.kycStatus !== "approved") {
+    // Check KYC status - accept either kycStatus === "approved" OR isVerified === true
+    const isKycApproved = details.kycStatus === "approved" || details.isVerified === true;
+    
+    if (!isKycApproved) {
       Swal.fire({
         icon: "warning",
         title: "KYC Verification Required",

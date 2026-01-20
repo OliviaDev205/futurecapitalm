@@ -19,8 +19,10 @@ export async function POST(request) {
       );
     }
 
-    // Check if user is KYC approved
-    if (user.kycStatus !== "approved") {
+    // Check if user is KYC approved - accept either kycStatus === "approved" OR isVerified === true
+    const isKycApproved = user.kycStatus === "approved" || user.isVerified === true;
+    
+    if (!isKycApproved) {
       return NextResponse.json(
         {
           success: false,

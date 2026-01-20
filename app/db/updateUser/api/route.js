@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import UserModel from "../../../../mongodbConnect";
 import { log } from "console";
 
+// Helper function to ensure numeric fields default to 0
+const ensureNumeric = (value) => {
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
 export async function POST(request) {
   const {
     name,
@@ -30,6 +39,7 @@ export async function POST(request) {
 
   try {
     // Find the user by email and update their data
+    // Ensure all numeric fields default to 0 if null, undefined, or empty
     const user = await UserModel.findOneAndUpdate(
       { email },
       {
@@ -40,20 +50,20 @@ export async function POST(request) {
         taxCodePin,
         autoTrades,
         isVerified,
-        tradingBalance,
-        investmentBalance,
-        totalDeposited,
-        totalWithdrawn,
-        totalAssets,
-        totalWon,
-        totalLoss,
+        tradingBalance: ensureNumeric(tradingBalance),
+        investmentBalance: ensureNumeric(investmentBalance),
+        totalDeposited: ensureNumeric(totalDeposited),
+        totalWithdrawn: ensureNumeric(totalWithdrawn),
+        totalAssets: ensureNumeric(totalAssets),
+        totalWon: ensureNumeric(totalWon),
+        totalLoss: ensureNumeric(totalLoss),
         // investmentPackage,
-        lastProfit,
-        planBonus,
-        tradingProgress,
+        lastProfit: ensureNumeric(lastProfit),
+        planBonus: ensureNumeric(planBonus),
+        tradingProgress: ensureNumeric(tradingProgress),
         customMessage,
         upgraded,
-        trade,
+        trade: ensureNumeric(trade),
       },
       { new: true } // Return the updated document
     );
