@@ -73,6 +73,26 @@ const userSchema = new mongoose.Schema({
   kycFeePaid: { type: Boolean, default: false },
   withdrawalFee: { type: Number, default: 0 },
   withdrawalFeeHistory: [Object], // Array to store withdrawal fee payments
+  kycPaymentHistory: [Object], // Array to store KYC payment history
+  kycApprovedDate: String, // Date when KYC was approved/declined
+  kycData: {
+    personalDetails: {
+      firstName: String,
+      lastName: String,
+      addressLine1: String,
+      addressLine2: String,
+      city: String,
+      stateProvince: String,
+      country: String,
+      zipCode: String,
+      phone: String,
+      secondPhone: String,
+    },
+    idType: String,
+    frontIDUrl: String,
+    backIDUrl: String,
+    submittedAt: Date,
+  },
 });
 
 const UserModel =

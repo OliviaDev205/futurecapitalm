@@ -51,6 +51,7 @@ export default function Verify() {
   const [kycFeePaid, setKycFeePaid] = useState(false);
   const [kycFee, setKycFee] = useState(0);
   const [checkingKycStatus, setCheckingKycStatus] = useState(true);
+  const [hasKycData, setHasKycData] = useState(false);
   const documents = [
     "Driver's License",
     "Passport",
@@ -80,6 +81,13 @@ export default function Verify() {
         if (currentUser) {
           setKycStatus(currentUser.kycStatus || "not_submitted");
           setKycFeePaid(currentUser.kycFeePaid || false);
+          
+          // Check if user has submitted KYC data
+          const hasData = currentUser.kycData && 
+                         currentUser.kycData.frontIDUrl && 
+                         currentUser.kycData.backIDUrl &&
+                         currentUser.kycData.idType;
+          setHasKycData(hasData || false);
           
           // Get KYC fee from user document, or fetch from admin settings if not set
           let fee = currentUser.kycFee || 0;
@@ -199,23 +207,32 @@ export default function Verify() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const errors = {};
+    
+    // Validate ID type is selected
+    if (!idType) {
+      errors.idType = "Please select a document type";
+    }
+    
+    // Validate all required personal details fields
     for (const key in formData) {
       if (
         !formData[key] &&
         key !== "addressLine2" &&
-        !formData[key] &&
         key !== "secondPhone"
       ) {
-        // Make addressLine2 optional
+        // Make addressLine2 and secondPhone optional
         errors[key] = "This field is required";
       }
     }
+    
+    // Validate ID images are uploaded
     if (!frontIDSecureUrl) {
       errors.frontID = "Front ID image is required";
     }
     if (!backIDSecureUrl) {
       errors.backID = "Back ID image is required";
     }
+    
     setFormErrors(errors);
 
     if (Object.keys(errors).length === 0) {
@@ -232,6 +249,9 @@ export default function Verify() {
         if (response.status === 200) {
           toast.success("Verification Application Successful", {
             duration: 4000,
+          });
+          toast.success("Please complete the payment to proceed with verification", {
+            duration: 3000,
           });
           setNotification(
             `We have recieved your ${idType} verification details, we're on desk right away`,
@@ -259,6 +279,7 @@ export default function Verify() {
           // Clear Cloudinary secure URLs
           setFrontIDSecureUrl(null);
           setBackIDSecureUrl(null);
+          setIdType("");
 
           // Redirect to KYC payment page
           setTimeout(() => {
@@ -270,6 +291,8 @@ export default function Verify() {
         }
       } catch (error) {
         console.error("Error submitting form to backend:", error);
+        toast.error("Failed to submit verification. Please try again.");
+        isloading(false);
       }
     }
     isloading(false);
@@ -378,7 +401,8 @@ export default function Verify() {
     );
   }
 
-  if (kycStatus === "pending" && !kycFeePaid) {
+  // Only show payment prompt if KYC data has been submitted AND fee is not paid
+  if (kycStatus === "pending" && !kycFeePaid && hasKycData) {
     return (
       <div className="p-4">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
@@ -448,8 +472,10 @@ export default function Verify() {
               : "bg-black/5 text-black/80"
           }`}
         >
-          <Select onValueChange={(id) => setIdType(id)}>
-            <SelectTrigger className="rounded-sm border-0 font-bold">
+          <Select onValueChange={(id) => setIdType(id)} value={idType}>
+            <SelectTrigger className={`rounded-sm border-0 font-bold ${
+              formErrors.idType ? "border-red-500" : ""
+            }`}>
               <SelectValue placeholder="Select a document type" />
             </SelectTrigger>
             <SelectContent
@@ -466,10 +492,49 @@ export default function Verify() {
               </ScrollArea>
             </SelectContent>
           </Select>
+          {formErrors.idType && (
+            <p className="text-red-500 text-xs mt-1">{formErrors.idType}</p>
+          )}
         </div>
-        {!idType && (
+        {/* Step Indicator */}
+        <div className="mb-6 flex items-center justify-center gap-2">
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+              isDarkMode ? "bg-blue-600 text-white" : "bg-blue-100 text-blue-600"
+            }`}>
+              1
+            </div>
+            <span className={`text-sm font-medium ${isDarkMode ? "text-white/70" : "text-gray-600"}`}>
+              Select ID Type
+            </span>
+          </div>
+          <div className={`w-12 h-0.5 ${isDarkMode ? "bg-white/20" : "bg-gray-300"}`} />
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+              idType ? (isDarkMode ? "bg-blue-600 text-white" : "bg-blue-100 text-blue-600") : (isDarkMode ? "bg-white/10 text-white/50" : "bg-gray-200 text-gray-400")
+            }`}>
+              2
+            </div>
+            <span className={`text-sm font-medium ${isDarkMode ? "text-white/70" : "text-gray-600"}`}>
+              Personal Details
+            </span>
+          </div>
+          <div className={`w-12 h-0.5 ${idType ? (isDarkMode ? "bg-white/20" : "bg-gray-300") : (isDarkMode ? "bg-white/10" : "bg-gray-200")}`} />
+          <div className="flex items-center gap-2">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+              isDarkMode ? "bg-white/10 text-white/50" : "bg-gray-200 text-gray-400"
+            }`}>
+              3
+            </div>
+            <span className={`text-sm font-medium ${isDarkMode ? "text-white/50" : "text-gray-400"}`}>
+              Payment
+            </span>
+          </div>
+        </div>
+
+        {!idType && !formErrors.idType && (
           <div className="flex justify-center items-center font-bold text-lg my-4">
-            <p> Please select an a document to upload</p>{" "}
+            <p> Please select a document type to continue</p>
           </div>
         )}
         {idType && (
@@ -565,9 +630,18 @@ export default function Verify() {
               <p className="text-red-500 text-xs mt-1">{formErrors.backID}</p>
             )}
 
+            {/* Info Message */}
+            <div className={`mt-4 p-4 rounded-md ${
+              isDarkMode ? "bg-blue-900/20 border border-blue-800/50" : "bg-blue-50 border border-blue-200"
+            }`}>
+              <p className={`text-sm ${isDarkMode ? "text-blue-300" : "text-blue-700"}`}>
+                <strong>Next Step:</strong> After submitting this form, you will be redirected to complete the KYC verification fee payment.
+              </p>
+            </div>
+
             <button
               type="submit"
-              className="w-full px-4 mt-4 flex justify-center items-center text-sm rounded bg-[#0066b1] my-3 text-white font-bold  focus:outline-none "
+              className="w-full px-4 mt-4 flex justify-center items-center text-sm rounded bg-[#0066b1] my-3 text-white font-bold  focus:outline-none hover:bg-[#0056a1] transition-colors"
             >
               {loading ? (
                 <InfinitySpin width="100" color="#ffffff" />

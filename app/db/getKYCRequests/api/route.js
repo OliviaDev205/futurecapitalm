@@ -20,6 +20,7 @@ export async function GET() {
       kycFee: user.kycFee || 0,
       kycFeePaid: user.kycFeePaid || false,
       kycApprovedDate: user.kycApprovedDate || null,
+      kycData: user.kycData || null, // Include KYC form data
     }));
 
     // Sort by status (pending first) then by date

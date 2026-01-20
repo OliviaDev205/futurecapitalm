@@ -17,12 +17,34 @@ export async function POST(request) {
     const settings = await adminSettings.json();
     const kycFee = settings.kycFee || 25;
 
-    // Update user with KYC fee
+    // Save KYC data to database
+    const kycData = {
+      personalDetails: {
+        firstName: formData.firstName || "",
+        lastName: formData.lastName || "",
+        addressLine1: formData.addressLine1 || "",
+        addressLine2: formData.addressLine2 || "",
+        city: formData.city || "",
+        stateProvince: formData.stateProvince || "",
+        country: formData.country || "",
+        zipCode: formData.zipCode || "",
+        phone: formData.phone || "",
+        secondPhone: formData.secondPhone || "",
+      },
+      idType: idType || "",
+      frontIDUrl: frontIDSecureUrl || "",
+      backIDUrl: backIDSecureUrl || "",
+      submittedAt: new Date(),
+    };
+
+    // Update user with KYC data, fee, and status
     await UserModel.updateOne(
       { email: email.toLowerCase() },
       {
+        kycData: kycData,
         kycFee: kycFee,
         kycStatus: "pending",
+        kycFeePaid: false, // Ensure fee is not paid yet
         isVerified: false, // Set to false when KYC is submitted
       }
     );
