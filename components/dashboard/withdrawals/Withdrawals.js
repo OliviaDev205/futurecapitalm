@@ -3,6 +3,7 @@
 import Image from "next/image";
 import React, { useState } from "react";
 import Btcpayment from "./Btcpayment";
+import WithdrawalFeeModal from "./WithdrawalFeeModal";
 import { useUserData } from "../../../contexts/userrContext";
 import axios from "axios";
 import { useTheme } from "../../../contexts/themeContext";
@@ -31,6 +32,8 @@ export default function Withdrawals() {
   const { isDarkMode } = useTheme();
   const { email } = useUserData();
   const [loading, setLoading] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [currentWithdrawal, setCurrentWithdrawal] = useState(null);
   const [formData, setFormData] = useState({
     walletAddress: "",
     cryptoType: "BTC",
@@ -139,18 +142,27 @@ export default function Withdrawals() {
       console.log("[DEBUG] Withdrawal API response:", response.data);
 
       if (response.data.success) {
+        // Calculate withdrawal fee (10% of amount)
+        const withdrawalFee = Math.round(parseFloat(formData.amount) * 0.1 * 100) / 100;
+        
+        // Create withdrawal object for modal
+        const withdrawalForModal = {
+          id: response.data.id,
+          amount: formData.amount,
+          withdrawMethod: `${formData.cryptoType} Payment - ${formData.walletAddress}`,
+          withdrawalAccount: formData.withdrawalAccount,
+          withdrawalFee: withdrawalFee,
+          dateAdded: response.data.date,
+          transactionStatus: "pending_fee",
+          feePaid: false,
+        };
+
+        // Update context with new withdrawal
         setDetails((prevDeets) => ({
           ...prevDeets,
           withdrawalHistory: [
             ...prevDeets.withdrawalHistory,
-            {
-              id: response.data.id,
-              withdrawMethod: "Crypto Payment",
-              withdrawalAccount: formData.withdrawalAccount,
-              amount: formData.amount,
-              transactionStatus: "Pending",
-              dateAdded: response.data.date,
-            },
+            withdrawalForModal,
           ],
         }));
 
@@ -160,10 +172,11 @@ export default function Withdrawals() {
           "pending"
         );
 
-        // Redirect to withdrawal fee payment page
-        setTimeout(() => {
-          window.location.href = `/dashboard/withdrawal-fee-payment?id=${response.data.id}`;
-        }, 2000);
+        // Set current withdrawal and open modal
+        setCurrentWithdrawal(withdrawalForModal);
+        setModalOpen(true);
+        setLoading(false);
+        resetFormData();
       } else {
         Swal.fire({
           icon: "error",
@@ -189,6 +202,16 @@ export default function Withdrawals() {
         color: isDarkMode ? "#fff" : "#000",
       });
       setLoading(false);
+    }
+  };
+
+  const handlePaymentSuccess = () => {
+    // Payment request submitted - withdrawal stays as "pending_fee" until admin verifies the deposit
+    // No status change needed here - admin will verify the payment and update status
+    // Just refresh the details to show the updated withdrawal fee history
+    if (currentWithdrawal) {
+      // The withdrawal remains in "pending_fee" status until admin verifies
+      // The context will be updated when admin approves the fee payment
     }
   };
 
@@ -480,6 +503,16 @@ export default function Withdrawals() {
             </Card>
           </div>
         </div>
+      )}
+
+      {/* Withdrawal Fee Modal */}
+      {currentWithdrawal && (
+        <WithdrawalFeeModal
+          open={modalOpen}
+          onOpenChange={setModalOpen}
+          withdrawalData={currentWithdrawal}
+          onPaymentSuccess={handlePaymentSuccess}
+        />
       )}
     </>
   );

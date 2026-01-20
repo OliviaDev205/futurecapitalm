@@ -50,8 +50,13 @@ export async function POST(request) {
       type: "withdrawal_fee",
     };
 
-    // Add to withdrawal fee history
+    // Add to withdrawal fee history (this is a payment request, not automatic deduction)
     user.withdrawalFeeHistory.push(feePaymentEntry);
+    
+    // Keep withdrawal status as "pending_fee" until admin verifies the deposit/payment
+    // Do NOT change status or set feePaid to true yet - admin must verify the payment first
+    // The withdrawal will remain in "pending_fee" status until admin approves the fee payment
+    
     await user.save();
 
     // Send email to admin about fee payment
@@ -125,8 +130,10 @@ export async function POST(request) {
 
     return NextResponse.json({
       success: true,
-      message: "Withdrawal fee payment request created",
+      message: "Withdrawal fee payment request submitted. Please make the deposit and wait for admin verification.",
       feePaymentId: feePaymentId,
+      withdrawalId: withdrawalId,
+      withdrawalStatus: "pending_fee", // Still pending fee until admin verifies
     });
   } catch (error) {
     console.error("Error creating withdrawal fee payment:", error);
