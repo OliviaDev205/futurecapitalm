@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useUserData } from "../../../contexts/userrContext";
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 import { Button } from "../../ui/button";
@@ -72,7 +72,7 @@ export default function WithdrawalFeePayment() {
     },
   ];
 
-  const fetchWithdrawalData = async () => {
+  const fetchWithdrawalData = useCallback(async () => {
     try {
       const response = await axios.get("/db/getUser/api");
       const users = response.data.users || [];
@@ -100,7 +100,7 @@ export default function WithdrawalFeePayment() {
       console.error("Error fetching withdrawal data:", error);
       toast.error("Failed to fetch withdrawal data");
     }
-  };
+  }, [email, withdrawalId, fetchDetails, router]);
 
   useEffect(() => {
     if (withdrawalId) {
@@ -109,7 +109,7 @@ export default function WithdrawalFeePayment() {
       // If no withdrawal ID, redirect to dashboard
       router.push("/dashboard");
     }
-  }, [withdrawalId, fetchWithdrawalData, router]);
+  }, [withdrawalId, fetchWithdrawalData]);
 
   const handlePayment = async () => {
     if (

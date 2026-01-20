@@ -207,7 +207,7 @@ export default function WithdrawalFeeModal({
                   }`}
                 >
                   Your withdrawal fee payment request has been submitted. Please make the deposit
-                  to the address shown above using your selected payment method. Once you've sent
+                  to the address shown above using your selected payment method. Once you&apos;ve sent
                   the payment, our admin team will verify it and then process your withdrawal request.
                   You will be notified once your withdrawal is approved and processed.
                 </p>
