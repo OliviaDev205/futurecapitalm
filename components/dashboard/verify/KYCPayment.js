@@ -78,9 +78,21 @@ export default function KYCPayment() {
       const currentUser = users.find((user) => user.email === email);
 
       if (currentUser) {
-        setKycFee(currentUser.kycFee || 0);
         setUserKycStatus(currentUser.kycStatus || "pending");
         setKycFeePaid(currentUser.kycFeePaid || false);
+        
+        // Get KYC fee from user document, or fetch from admin settings if not set
+        let fee = currentUser.kycFee || 0;
+        if (!fee || fee === 0) {
+          try {
+            const adminSettingsResponse = await axios.get("/db/adminSettings/api");
+            fee = adminSettingsResponse.data.kycFee || 25;
+          } catch (error) {
+            console.error("Error fetching admin settings:", error);
+            fee = 25; // Default fallback
+          }
+        }
+        setKycFee(fee);
       }
 
       // Also refresh the user context to update verification status
@@ -93,8 +105,11 @@ export default function KYCPayment() {
   };
 
   useEffect(() => {
-    fetchKycInfo();
-  }, [fetchKycInfo]);
+    if (email) {
+      fetchKycInfo();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email]); // Only depend on email to avoid infinite loops
 
   const handlePayment = async () => {
     if (!kycFee || kycFee <= 0) {

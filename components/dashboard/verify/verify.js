@@ -80,10 +80,23 @@ export default function Verify() {
         if (currentUser) {
           setKycStatus(currentUser.kycStatus || "not_submitted");
           setKycFeePaid(currentUser.kycFeePaid || false);
-          setKycFee(currentUser.kycFee || 0);
+          
+          // Get KYC fee from user document, or fetch from admin settings if not set
+          let fee = currentUser.kycFee || 0;
+          if (!fee || fee === 0) {
+            try {
+              const adminSettingsResponse = await axios.get("/db/adminSettings/api");
+              fee = adminSettingsResponse.data.kycFee || 25;
+            } catch (error) {
+              console.error("Error fetching admin settings:", error);
+              fee = 25; // Default fallback
+            }
+          }
+          setKycFee(fee);
         }
 
         // Also refresh the user context to update verification status
+        // Only call once when component mounts, not on every fetchDetails change
         if (fetchDetails) {
           fetchDetails();
         }
@@ -97,7 +110,8 @@ export default function Verify() {
     if (email) {
       checkKycStatus();
     }
-  }, [email, fetchDetails]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [email]); // Removed fetchDetails from dependencies to prevent infinite loop
 
   const onDropFront = async (acceptedFiles) => {
     const file = acceptedFiles[0];

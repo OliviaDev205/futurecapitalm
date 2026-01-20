@@ -1,7 +1,7 @@
 "use client";
 import axios from "axios";
 import { useRouter } from "next/navigation";
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import { cryptos } from "../components/dashboard/MarketsPage/data/cryptos";
 
 const UserDataContext = createContext();
@@ -19,17 +19,19 @@ export const UserDataProvider = ({ children }) => {
 
   const [stockPrices, setStockPrices] = useState({}); // Updated state variable name
 
-  let email = ""; // Initialize email
-
-  if (typeof document !== "undefined") {
-    const rawEmail = decodeURIComponent(
-      document.cookie.replace(
-        /(?:(?:^|.*;\s*)email\s*\=\s*([^;]*).*$)|^.*$/,
-        "$1"
-      )
-    );
-    email = rawEmail.replace(/%40/g, "@");
-  }
+  // Get email from cookies and store in state to prevent re-renders
+  const email = useMemo(() => {
+    if (typeof document !== "undefined") {
+      const rawEmail = decodeURIComponent(
+        document.cookie.replace(
+          /(?:(?:^|.*;\s*)email\s*\=\s*([^;]*).*$)|^.*$/,
+          "$1"
+        )
+      );
+      return rawEmail.replace(/%40/g, "@");
+    }
+    return "";
+  }, []);
   const deposits = [
     {
       coinName: "Bitcoin",
@@ -193,7 +195,9 @@ export const UserDataProvider = ({ children }) => {
     }
   }, [selectedMethod]);
 
-  const fetchDetails = async () => {
+  const fetchDetails = useCallback(async () => {
+    if (!email) return;
+    
     try {
       const response = await fetch(
         "/fetching/fetchAllDetails",
@@ -228,18 +232,18 @@ export const UserDataProvider = ({ children }) => {
     } catch (error) {
       console.error(error);
     }
-  };
+  }, [email, router]);
 
   useEffect(() => {
+    if (!email) return;
+    
     // Fetch details initially
     fetchDetails();
 
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-
+    // Set up polling interval (60 seconds)
     const intervalId = setInterval(fetchDetails, 60000);
     return () => clearInterval(intervalId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [email]);
+  }, [email, fetchDetails]);
   const setNotification = async (message, type, method) => {
     try {
       // Prepare the notification data
