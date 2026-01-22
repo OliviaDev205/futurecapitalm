@@ -99,7 +99,9 @@ export async function POST(request) {
           </p>
           <div style="margin-top: 20px;">
             <a href="${
-              process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
+              process.env.VERCEL_URL
+                ? `https://${process.env.VERCEL_URL}`
+                : process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
             }/admin/verification?tab=kyc" 
                style="background: #3b82f6; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
               Review in Admin Dashboard

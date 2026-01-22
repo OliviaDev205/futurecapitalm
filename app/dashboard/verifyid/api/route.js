@@ -8,14 +8,10 @@ export async function POST(request) {
     await request.json();
 
   try {
-    // Get KYC fee from admin settings
-    const adminSettings = await fetch(
-      `${
-        process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"
-      }/db/adminSettings/api`
-    );
-    const settings = await adminSettings.json();
-    const kycFee = settings.kycFee || 25;
+    // Get KYC fee from admin settings directly from database
+    // This avoids HTTP fetch calls that fail in serverless environments
+    const adminUser = await UserModel.findOne({ role: "admin" });
+    const kycFee = adminUser?.kycFee || 25;
 
     // Save KYC data to database
     const kycData = {
