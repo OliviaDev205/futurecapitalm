@@ -148,45 +148,73 @@ export default function WTTable({ data, setData, email, name }) {
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="z-[100]">
               <DropdownMenuLabel>Actions</DropdownMenuLabel>
               <DropdownMenuSeparator />
 
-              {payment.transactionStatus.toLowerCase() === "pending" && (
-                <DropdownMenuItem
-                  className="bg-re-50 text-green-800   py-2"
-                  onClick={() => {
-                    const confirmUpdateStatus = confirm(
-                      "Proceed with updating the transaction status and sending approval email?"
-                    );
-                    if (confirmUpdateStatus) {
-                      handleSendMail(payment.amount);
-                      updateTransactionStatus(
-                        payment.id,
-                        "success",
-                        payment.amount,
-                        payment.withdrawalAccount
-                      )
-                    }
-                  }}
-                >
-                  Approve Transaction
-                </DropdownMenuItem>
-              )}
-              {payment.transactionStatus.toLowerCase() === "pending" && (
-                <DropdownMenuItem
-                  className="bg-re-50 fot-bold hover:text-red-600 text-red-700 py-2"
-                  onClick={() =>
-                    updateTransactionStatus(
-                      payment.id,
-                      "failed",
-                      payment.amount
-                    )
-                  }
-                >
-                  Reject Transaction
-                </DropdownMenuItem>
-              )}
+              {(() => {
+                const status = payment.transactionStatus?.toLowerCase()?.trim() || "";
+                const isPending = status === "pending" || status === "pending_fee";
+                
+                // Debug: log status for troubleshooting
+                if (process.env.NODE_ENV === "development") {
+                  console.log("Withdrawal status:", payment.transactionStatus, "->", status, "isPending:", isPending);
+                }
+                
+                if (isPending) {
+                  return (
+                    <>
+                      <DropdownMenuItem
+                        className="text-green-800 hover:text-green-900 hover:bg-green-50 cursor-pointer py-2 font-medium"
+                        onClick={() => {
+                          const confirmUpdateStatus = confirm(
+                            "Proceed with updating the transaction status and sending approval email?"
+                          );
+                          if (confirmUpdateStatus) {
+                            handleSendMail(payment.amount);
+                            updateTransactionStatus(
+                              payment.id,
+                              "success",
+                              payment.amount,
+                              payment.withdrawalAccount
+                            );
+                          }
+                        }}
+                      >
+                        ✓ Approve Transaction
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-red-700 hover:text-red-900 hover:bg-red-50 cursor-pointer py-2 font-medium"
+                        onClick={() => {
+                          const confirmReject = confirm(
+                            "Are you sure you want to reject this withdrawal request?"
+                          );
+                          if (confirmReject) {
+                            updateTransactionStatus(
+                              payment.id,
+                              "failed",
+                              payment.amount
+                            );
+                          }
+                        }}
+                      >
+                        ✗ Reject Transaction
+                      </DropdownMenuItem>
+                    </>
+                  );
+                } else {
+                  return (
+                    <>
+                      <DropdownMenuItem disabled className="text-gray-500 py-2 text-xs">
+                        Status: {payment.transactionStatus || "Unknown"}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem disabled className="text-gray-400 py-2 text-xs">
+                        No actions available for this status
+                      </DropdownMenuItem>
+                    </>
+                  );
+                }
+              })()}
             </DropdownMenuContent>
           </DropdownMenu>
         );
@@ -239,12 +267,14 @@ export default function WTTable({ data, setData, email, name }) {
           }),
         });
 
-        if (response.ok) {
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
           // Transaction status updated successfully on the backend, update the frontend
           const updatedData = data.map((transaction) => {
             if (transaction.id === transactionId) {
               // Update the transaction status
-              toast.success("Changes Applied");
+              toast.success("Withdrawal request updated successfully");
               return { ...transaction, transactionStatus: newStatus };
             }
             return transaction;
@@ -254,11 +284,14 @@ export default function WTTable({ data, setData, email, name }) {
           setData(updatedData);
         } else {
           // Handle error cases when the backend update fails
-          console.error("Failed to update transaction status on the backend");
+          const errorMessage = result?.message || "Failed to update withdrawal request";
+          toast.error(errorMessage);
+          console.error("Failed to update transaction status on the backend:", errorMessage);
         }
       }
     } catch (error) {
       console.error("Error while updating transaction status:", error);
+      toast.error("An error occurred while updating the withdrawal request");
     }
   };
 

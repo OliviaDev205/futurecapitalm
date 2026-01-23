@@ -7,6 +7,15 @@ export async function POST(request) {
     await request.json();
 
   try {
+    const lowerEmail = email?.toLowerCase();
+    
+    if (!lowerEmail || !transactionId || !newStatus) {
+      return NextResponse.json(
+        { success: false, message: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
     // Find the user and the specific withdrawal record
     const updateObj = {
       $set: {
@@ -38,8 +47,8 @@ export async function POST(request) {
           date: Date.now(),
         },
       };
-    } else if (newStatus === "failure") {
-      // If newStatus is "failure," push the failure notification
+    } else if (newStatus === "failed" || newStatus === "failure") {
+      // If newStatus is "failed" or "failure," push the failure notification
       updateObj.$push = {
         notifications: {
           id: randomUUID(),
@@ -52,7 +61,7 @@ export async function POST(request) {
     }
 
     const updatedUser = await UserModel.findOneAndUpdate(
-      { email, "withdrawalHistory.id": transactionId },
+      { email: lowerEmail, "withdrawalHistory.id": transactionId },
       updateObj,
       {
         new: true, // Return the updated document
@@ -60,21 +69,21 @@ export async function POST(request) {
     );
 
     if (!updatedUser) {
-      return new NextResponse({
-        status: 404,
-        body: "User or withdrawal record not found",
-      });
+      return NextResponse.json(
+        { success: false, message: "User or withdrawal record not found" },
+        { status: 404 }
+      );
     }
 
-    return new NextResponse({
-      status: 200,
-      body: "Transaction status updated successfully",
+    return NextResponse.json({
+      success: true,
+      message: "Transaction status updated successfully",
     });
   } catch (error) {
     console.error("Error while updating transaction status:", error);
-    return new NextResponse({
-      status: 500,
-      body: "Internal Server Error",
-    });
+    return NextResponse.json(
+      { success: false, message: "Internal Server Error" },
+      { status: 500 }
+    );
   }
 }
