@@ -171,7 +171,6 @@ export default function WTTable({ data, setData, email, name }) {
                             "Proceed with updating the transaction status and sending approval email?"
                           );
                           if (confirmUpdateStatus) {
-                            handleSendMail(payment.amount);
                             updateTransactionStatus(
                               payment.id,
                               "success",
